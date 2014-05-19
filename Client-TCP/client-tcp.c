@@ -48,7 +48,7 @@ void SendReceive(FILE *fp, int sockfd){
         write(sockfd, sendline, strlen(sendline));
        
         /* flags if the server stopped before the client could end */     
-        if(read(sockfd, recvline, MAXLINE) == 0){
+        if (read(sockfd, recvline, MAXLINE) == 0) {
             printf("Client: Server Terminated Prematurely!\n");
             exit(0);
         }
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
     struct sockaddr_in servaddr;;
 
     /* must include an ip address or this will flag */
-    if(argc != 2){
+    if (argc != 2) {
         printf("Usage: tcpClient <IPaddress>\n");
         exit(0);
     }

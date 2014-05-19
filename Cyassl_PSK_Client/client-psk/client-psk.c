@@ -71,10 +71,11 @@ void SendReceive(FILE *fp, CYASSL* ssl){
         CyaSSL_write(ssl, sendline, strlen(sendline));
         
         /* flags if the Server stopped before the client could end */
-        if(CyaSSL_read(ssl, recvline, MAXLINE) == 0){
+        if (CyaSSL_read(ssl, recvline, MAXLINE) == 0) {
             printf("Client: Server Terminated Prematurely!\n");
             exit(0);
         }
+
         /* writes the string supplied to the indicated output stream */
         fputs(recvline, stdout);
         printf("\n");
@@ -89,7 +90,7 @@ int main(int argc, char **argv){
     struct sockaddr_in servaddr;;
 
     /* must include an ip address of this will flag */
-    if(argc != 2){
+    if (argc != 2) {
         printf("Usage: tcpClient <IPaddress>\n");
         exit(0);
     }
@@ -98,7 +99,7 @@ int main(int argc, char **argv){
     CYASSL_CTX* ctx;
             
     /* create and initialize CYASSL_CTX structure */
-    if ( (ctx = CyaSSL_CTX_new(CyaTLSv1_2_client_method())) == NULL){
+    if ((ctx = CyaSSL_CTX_new(CyaTLSv1_2_client_method())) == NULL) {
         fprintf(stderr, "SSL_CTX_new error.\n");
         exit(EXIT_FAILURE);
        }
@@ -132,7 +133,7 @@ int main(int argc, char **argv){
     connect(sockfd, (SA *) &servaddr, sizeof(servaddr));
     
     /* creat cyassl object after each tcp connct */
-    if( (ssl = CyaSSL_new(ctx)) == NULL){
+    if ( (ssl = CyaSSL_new(ctx)) == NULL) {
         fprintf(stderr, "CyaSSL_new error.\n");
         exit(EXIT_FAILURE);
     }
