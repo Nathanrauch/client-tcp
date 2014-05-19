@@ -58,8 +58,8 @@ void SendReceive(FILE *fp, int sockfd){
     }
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv){
+    
     struct sockaddr_in servaddr;;
 
     /* must include an ip address or this will flag */

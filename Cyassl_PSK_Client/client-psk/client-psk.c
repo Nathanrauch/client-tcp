@@ -85,7 +85,6 @@ void SendReceive(FILE *fp, CYASSL* ssl){
 
 int main(int argc, char **argv){
     
-
     CYASSL* ssl;
     struct sockaddr_in servaddr;;
 
