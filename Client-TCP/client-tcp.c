@@ -76,7 +76,7 @@ int main(int argc, char **argv)
     bzero(&servaddr, sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(SERV_PORT);
+    servaddr.sin_port = htons(SERV_PORT); 
 
     /* converts IPv4 addresses from text to binary form */
     inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
