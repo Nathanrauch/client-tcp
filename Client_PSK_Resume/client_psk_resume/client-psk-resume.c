@@ -20,12 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA */
 
-#include	<stdio.h>
-#include	<stdlib.h>
-#include	<string.h>
-#include	<errno.h>
-#include	<arpa/inet.h>
-#include	<signal.h>
+#include    <stdio.h>
+#include    <stdlib.h>
+#include    <string.h>
+#include    <errno.h>
+#include    <arpa/inet.h>
+#include    <signal.h>
 #include    <unistd.h>
 #include    <cyassl/ssl.h>  /* must include this to use cyassl security */
 
@@ -57,34 +57,21 @@ static inline unsigned int My_Psk_Client_Cb(CYASSL* ssl, const char* hint,
 }
 
 /*
- * this function will send the inputted string to the server and then 
- * recieve the string from the server outputing it to the termial
+ * this function will send the inputted string to the server
  */ 
 void SendReceive(FILE *fp, CYASSL* ssl){
     char sendline[MAXLINE]; /* string to send to the server */
-    char recvline[MAXLINE]; /* string received from the server */
     
-    while (fgets(sendline, MAXLINE, fp) != NULL) {
-        
+        fgets(sendline, MAXLINE, fp);
         /* write string to the server */
         CyaSSL_write(ssl, sendline, strlen(sendline));
-        
-        /* flags if the Server stopped before the client could end */
-        if (CyaSSL_read(ssl, recvline, MAXLINE) == 0) {
-            printf("Client: Server Terminated Prematurely!\n");
-            exit(0);
-        }
-
-        /* writes the string supplied to the indicated output stream */
-        fputs(recvline, stdout);
-        printf("\n");
-        exit(0);
-    }
 }
 
 int main(int argc, char **argv){
     
     CYASSL* ssl;
+    CYASSL*         sslResume = 0;
+    CYASSL_SESSION* session   = 0;
     struct sockaddr_in servaddr;;
 
     /* must include an ip address of this will flag */
@@ -139,17 +126,64 @@ int main(int argc, char **argv){
     /* associate the file descriptor with the session */
     CyaSSL_set_fd(ssl, sockfd);
 
-    /* takes inputting string and outputs it to the server */
+     /* takes inputting string and outputs it to the server */
     SendReceive(stdin, ssl);
+
+    /* Save the session ID to reuse */
+    session   = CyaSSL_get_session(ssl);
+    sslResume = CyaSSL_new(ctx);
+
+    /* shut down Cyassl SSL */
+    CyaSSL_shutdown(ssl);
+
+    /* close connection */
+    close(sockfd);
 
     /* cleanup */
     CyaSSL_free(ssl);
-
-    /* when completely done using SSL/TLS, free the 
-     * cyassl_ctx object */
     CyaSSL_CTX_free(ctx);
     CyaSSL_Cleanup();
 
+   
+    
+
+    /* start a new socket connection */
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    
+    /* connect to the socket */
+    connect(sock, (SA *) &servaddr, sizeof(servaddr));
+
+    /* set the session ID so a handshake doesn't have to happen again 
+     * to connect to the server*/
+    CyaSSL_set_fd(sslResume, sock);
+    CyaSSL_set_session(sslResume, session);
+
+    /* check the connect to see if it has connect successfully */
+    if (CyaSSL_connect(sslResume) != SSL_SUCCESS) {
+        printf("SSL resume failed\n");
+        exit(0);
+    }
+
+    /* takes inputting string and outputs it to the server */
+    SendReceive(stdin, sslResume);
+
+    /* check to see if the session id is being reused */
+    if (CyaSSL_session_reused(sslResume))
+        printf("reused session id\n");
+    else
+        printf("didn't reuse session id!!!\n");
+
+    /* shut down cyassl ssl */
+    CyaSSL_shutdown(sslResume);
+
+    /* shut down socket */
+    close(sock);
+
+    /* clean up */
+    CyaSSL_free(sslResume);   
+    CyaSSL_CTX_free(ctx);
+    CyaSSL_Cleanup();
+    
     /* exit client */
     exit(0);
 }
