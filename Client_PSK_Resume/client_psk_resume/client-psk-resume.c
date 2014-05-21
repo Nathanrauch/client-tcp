@@ -89,8 +89,8 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
        }
                 
-   /* load ca certificates into CYASSL_CTX.
-    * these will be used to verify the server we connect to */
+     /* load ca certificates into CYASSL_CTX.
+      * these will be used to verify the server we connect to */
      if (CyaSSL_CTX_load_verify_locations(ctx,"../certs/ca-cert.pem",0) != 
             SSL_SUCCESS) {
          fprintf(stderr, "Error loading ../certs/ca-cert.pem, "
@@ -144,9 +144,10 @@ int main(int argc, char **argv){
     CyaSSL_CTX_free(ctx);
     CyaSSL_Cleanup();
 
-   
-    
-
+    /*
+     * resume session, start new connection and socket   
+     */
+     
     /* start a new socket connection */
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     
