@@ -1,5 +1,5 @@
 
-/* client-psk.c
+/* client-psk-resume.c
  *
  * Copyright (C) 2006-2014 wolfSSL Inc.
  *
@@ -147,7 +147,7 @@ int main(int argc, char **argv){
     /*
      * resume session, start new connection and socket   
      */
-     
+
     /* start a new socket connection */
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     
