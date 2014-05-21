@@ -87,6 +87,8 @@ int main(int argc, char **argv){
     /* takes inputting string and outputs it to the server */
     SendReceive(stdin, sockfd);
 
+    /* close socket and connection */
+    close(sockfd);
     /* end client */
     exit(0);
 }
