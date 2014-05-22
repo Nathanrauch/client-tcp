@@ -11,7 +11,7 @@ make
 
 make install
 
-Now in the directory of Cyassl_PSK_Client
+Now in the directory of Client_PSK_Resume/client_psk_resume
 To compile the c code run
 
 make

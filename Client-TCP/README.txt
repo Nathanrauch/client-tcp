@@ -3,6 +3,7 @@ examples-client-tcp
 
 TCP client example for wolfSSL
 
+Now in the directory of Client-TCP
 To compile the c code run
 
 make

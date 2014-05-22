@@ -1,5 +1,5 @@
 
-/* client-psk.c
+/* client-psk-nonblocking.c
  *
  * Copyright (C) 2006-2014 wolfSSL Inc.
  *
@@ -20,19 +20,98 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
  * USA */
 
-#include	<stdio.h>
-#include	<stdlib.h>
-#include	<string.h>
-#include	<errno.h>
-#include	<arpa/inet.h>
-#include	<signal.h>
+#include    <stdio.h>
+#include    <stdlib.h>
+#include    <string.h>
+#include    <errno.h>
+#include    <arpa/inet.h>
+#include    <signal.h>
 #include    <unistd.h>
+#include    <fcntl.h>
+#include    <sys/ioctl.h>
 #include    <cyassl/ssl.h>  /* must include this to use cyassl security */
+
 
 #define    MAXLINE 256      /* max text line length */
 #define    SERV_PORT 11111  /* default port*/
 #define    SA  struct sockaddr
 
+/*
+ * enum used for tcp_select function 
+ */
+enum {
+    TEST_SELECT_FAIL,
+    TEST_TIMEOUT,
+    TEST_RECV_READY,
+    TEST_ERROR_READY
+};
+
+
+static inline int tcp_select(int socketfd, int to_sec)
+{
+    fd_set recvfds, errfds;
+    int nfds = socketfd + 1;
+    struct timeval timeout = { (to_sec > 0) ? to_sec : 0, 0};
+    int result;
+
+    FD_ZERO(&recvfds);
+    FD_SET(socketfd, &recvfds);
+    FD_ZERO(&errfds);
+    FD_SET(socketfd, &errfds);
+
+    result = select(nfds, &recvfds, NULL, &errfds, &timeout);
+
+    if (result == 0)
+        return TEST_TIMEOUT;
+    else if (result > 0) {
+        if (FD_ISSET(socketfd, &recvfds))
+            return TEST_RECV_READY;
+        else if(FD_ISSET(socketfd, &errfds))
+            return TEST_ERROR_READY;
+    }
+
+    return TEST_SELECT_FAIL;
+}
+
+/*
+ * sets up and uses nonblocking protocols using cyassl 
+ */
+static void NonBlockingSSL_Connect(CYASSL* ssl){
+
+    int ret = CyaSSL_connect(ssl);
+
+    int error = CyaSSL_get_error(ssl, 0);
+    int sockfd = (int)CyaSSL_get_fd(ssl);
+    int select_ret;
+
+    while (ret != SSL_SUCCESS && (error == SSL_ERROR_WANT_READ ||
+                                  error == SSL_ERROR_WANT_WRITE)) {
+        int currTimeout = 1;
+
+        if (error == SSL_ERROR_WANT_READ)
+            printf("... client would read block\n");
+        else
+            printf("... client would write block\n");
+
+        select_ret = tcp_select(sockfd, currTimeout);
+
+        if ((select_ret == TEST_RECV_READY) ||
+                                        (select_ret == TEST_ERROR_READY)) {
+                    ret = CyaSSL_connect(ssl);
+            error = CyaSSL_get_error(ssl, 0);
+        }
+        else if (select_ret == TEST_TIMEOUT && !CyaSSL_dtls(ssl)) {
+            error = SSL_ERROR_WANT_READ;
+        }
+        else {
+            error = SSL_FATAL_ERROR;
+        }
+    }
+    if (ret != SSL_SUCCESS){
+        printf("SSL_connect failed");
+        exit(0);
+    }
+}
 
 /*
  *psk client set up.
@@ -140,6 +219,31 @@ int main(int argc, char **argv){
     /* associate the file descriptor with the session */
     CyaSSL_set_fd(ssl, sockfd);
 
+    /* tell cyaSSL that  nonblocking is going to be used */
+    CyaSSL_set_using_nonblock(ssl, 1);
+
+    /* invokes the fcntl callable service to get the file status 
+     * flags for a file. checks if it returns an error, if it does
+     * stop program */
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    if (flags < 0){
+        printf("fcntl get failed\n");
+            exit(0);
+    }
+
+    /* invokes the fcntl callable service to set file status flags.
+     * Do not block an open, a read, or a write on the file 
+     * (do not wait for terminal input. If an error occurs, 
+     * stop program*/
+    flags = fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+    if (flags < 0){
+        printf("fcntl set failed\n");
+        exit(0);
+    }
+
+    /* setting up and running nonblocking socket */
+    NonBlockingSSL_Connect(ssl);
+
     /* takes inputting string and outputs it to the server */
     SendReceive(stdin, ssl);
 
@@ -151,6 +255,4 @@ int main(int argc, char **argv){
     CyaSSL_CTX_free(ctx);
     CyaSSL_Cleanup();
 
-    /* exit client */
-    exit(0);
 }
