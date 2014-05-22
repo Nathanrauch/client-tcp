@@ -1,4 +1,3 @@
-
 /* client-psk-nonblocking.c
  *
  * Copyright (C) 2006-2014 wolfSSL Inc.

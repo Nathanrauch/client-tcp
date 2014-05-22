@@ -154,12 +154,11 @@ int main(int argc, char **argv){
     /* connect to the socket */
     connect(sock, (SA *) &servaddr, sizeof(servaddr));
 
-    /* set the session ID so a handshake doesn't have to happen again 
-     * to connect to the server*/
+    /* set the session ID to connect to the server */
     CyaSSL_set_fd(sslResume, sock);
     CyaSSL_set_session(sslResume, session);
 
-    /* check the connect to see if it has connect successfully */
+    /* check has connect successfully */
     if (CyaSSL_connect(sslResume) != SSL_SUCCESS) {
         printf("SSL resume failed\n");
         exit(0);
