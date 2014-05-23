@@ -79,7 +79,7 @@ void SendReceive(FILE *fp, CYASSL* ssl){
         /* writes the string supplied to the indicated output stream */
         fputs(recvline, stdout);
         printf("\n");
-        exit(0);
+        //exit(0);
     }
 }
 
