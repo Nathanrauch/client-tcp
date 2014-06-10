@@ -61,7 +61,7 @@ static inline unsigned int My_Psk_Client_Cb(CYASSL* ssl, const char* hint,
 void SendReceive(CYASSL* ssl){
     char sendline[MAXLINE]; /* string to send to the server */
     
-        fgets(sendline, MAXLINE, fp);
+        fgets(sendline, MAXLINE, stdin);
         /* write string to the server */
         CyaSSL_write(ssl, sendline, strlen(sendline));
 }
@@ -119,7 +119,10 @@ int main(int argc, char **argv){
     CyaSSL_CTX_set_psk_client_callback(ctx,My_Psk_Client_Cb);
 
     /* attempts to make a connection on a socket */
-    connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    ret = connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    if (ret != 0 ){
+        return 1;
+    }
     
     /* creat cyassl object after each tcp connct */
     if ( (ssl = CyaSSL_new(ctx)) == NULL) {
@@ -156,7 +159,11 @@ int main(int argc, char **argv){
     sock = socket(AF_INET, SOCK_STREAM, 0);
     
     /* connect to the socket */
-    connect(sock, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    ret =connect(sock, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    
+    if (ret != 0){
+        return 1;
+    }
 
     /* set the session ID to connect to the server */
     CyaSSL_set_fd(sslResume, sock);
@@ -165,7 +172,7 @@ int main(int argc, char **argv){
     /* check has connect successfully */
     if (CyaSSL_connect(sslResume) != SSL_SUCCESS) {
         printf("SSL resume failed\n");
-        exit(0);
+        return 1;
     }
 
     /* takes inputting string and outputs it to the server */
@@ -188,6 +195,5 @@ int main(int argc, char **argv){
     CyaSSL_CTX_free(ctx);
     CyaSSL_Cleanup();
     
-    /* exit client */
     return ret;
 }
