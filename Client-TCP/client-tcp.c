@@ -30,8 +30,8 @@
 #include    <signal.h>
 #include    <unistd.h>
 
-#define    MAXLINE     256    /* max text line length */
-#define    SERV_PORT   11111
+#define     MAXLINE     256    /* max text line length */
+#define     SERV_PORT   11111
 
 /*
  * this function will send the inputted string to the server and then 
@@ -74,17 +74,26 @@ int main(int argc, char **argv)
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
 
     /* places n zero-valued bytes in the address servaddr */
-    bzero(&servaddr, sizeof(servaddr));
+    memset(&servaddr, sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_port   = htons(SERV_PORT); 
 
     /* converts IPv4 addresses from text to binary form */
-    inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
+    ret = inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
+    
+    if (ret != 1) {
+        printf("Not a Valid network address");
+        return 1;
+    }
 
     /* attempts to make a connection on a socket */
-    connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
-
+    ret = connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    
+    if (ret != 0) {
+        return 1;
+    }
+    
     /* takes inputting string and outputs it to the server */
     ret = SendReceive(sockfd);
 
