@@ -30,10 +30,9 @@
 #include    <sys/ioctl.h>
 #include    <cyassl/ssl.h>  /* must include this to use cyassl security */
 
+#define     MAXLINE 256      /* max text line length */
+#define     SERV_PORT 11111  /* default port*/
 
-#define    MAXLINE 256      /* max text line length */
-#define    SERV_PORT 11111  /* default port*/
-#define    SA  struct sockaddr
 
 /*
  * enum used for tcp_select function 
@@ -75,17 +74,17 @@ static inline int tcp_select(int socketfd, int to_sec)
 /*
  * sets up and uses nonblocking protocols using cyassl 
  */
-static void NonBlockingSSL_Connect(CYASSL* ssl){
-
-    int ret = CyaSSL_connect(ssl);
-
-    int error = CyaSSL_get_error(ssl, 0);
-    int sockfd = (int)CyaSSL_get_fd(ssl);
-    int select_ret;
+static void NonBlockingSSL_Connect(CYASSL* ssl)
+{
+    int ret, error, sockfd, select_ret, currTimeout;
+    
+    ret    = CyaSSL_connect(ssl);
+    error  = CyaSSL_get_error(ssl, 0);
+    sockfd = (int)CyaSSL_get_fd(ssl);
 
     while (ret != SSL_SUCCESS && (error == SSL_ERROR_WANT_READ ||
                                   error == SSL_ERROR_WANT_WRITE)) {
-        int currTimeout = 1;
+        currTimeout = 1;
 
         if (error == SSL_ERROR_WANT_READ)
             printf("... client would read block\n");
@@ -95,8 +94,8 @@ static void NonBlockingSSL_Connect(CYASSL* ssl){
         select_ret = tcp_select(sockfd, currTimeout);
 
         if ((select_ret == TEST_RECV_READY) ||
-                                        (select_ret == TEST_ERROR_READY)) {
-                    ret = CyaSSL_connect(ssl);
+            (select_ret == TEST_ERROR_READY)) {
+            ret   = CyaSSL_connect(ssl);
             error = CyaSSL_get_error(ssl, 0);
         }
         else if (select_ret == TEST_TIMEOUT && !CyaSSL_dtls(ssl)) {
@@ -108,7 +107,7 @@ static void NonBlockingSSL_Connect(CYASSL* ssl){
     }
     if (ret != SSL_SUCCESS){
         printf("SSL_connect failed");
-        exit(0);
+        return 1;
     }
 }
 
@@ -117,7 +116,8 @@ static void NonBlockingSSL_Connect(CYASSL* ssl){
  */
 static inline unsigned int My_Psk_Client_Cb(CYASSL* ssl, const char* hint,
         char* identity, unsigned int id_max_len, unsigned char* key, 
-        unsigned int key_max_len){
+        unsigned int key_max_len)
+        {
     (void)ssl;
     (void)hint;
     (void)key_max_len;
@@ -139,11 +139,12 @@ static inline unsigned int My_Psk_Client_Cb(CYASSL* ssl, const char* hint,
  * this function will send the inputted string to the server and then 
  * recieve the string from the server outputing it to the termial
  */ 
-void SendReceive(FILE *fp, CYASSL* ssl){
+void SendReceive(CYASSL* ssl)
+{
     char sendline[MAXLINE]; /* string to send to the server */
     char recvline[MAXLINE]; /* string received from the server */
     
-    while (fgets(sendline, MAXLINE, fp) != NULL) {
+    while (fgets(sendline, MAXLINE, stdin) != NULL) {
         
         /* write string to the server */
         CyaSSL_write(ssl, sendline, strlen(sendline));
@@ -151,34 +152,36 @@ void SendReceive(FILE *fp, CYASSL* ssl){
         /* flags if the Server stopped before the client could end */
         if (CyaSSL_read(ssl, recvline, MAXLINE) == 0) {
             printf("Client: Server Terminated Prematurely!\n");
-            exit(0);
+            return 1;
         }
 
         /* writes the string supplied to the indicated output stream */
         fputs(recvline, stdout);
         printf("\n");
-        exit(0);
+        return 1;
     }
 }
 
 int main(int argc, char **argv){
     
+    int sockfd, ret;
+    CYASSL_CTX* ctx;
     CYASSL* ssl;
     struct sockaddr_in servaddr;;
 
     /* must include an ip address of this will flag */
     if (argc != 2) {
         printf("Usage: tcpClient <IPaddress>\n");
-        exit(0);
+        return 1;
     }
     
     CyaSSL_Init();  /* initialize cyaSSL */
-    CYASSL_CTX* ctx;
+    
             
     /* create and initialize CYASSL_CTX structure */
     if ((ctx = CyaSSL_CTX_new(CyaTLSv1_2_client_method())) == NULL) {
         fprintf(stderr, "SSL_CTX_new error.\n");
-        exit(EXIT_FAILURE);
+        return 1;
        }
                 
    /* load ca certificates into CYASSL_CTX.
@@ -187,32 +190,38 @@ int main(int argc, char **argv){
             SSL_SUCCESS) {
          fprintf(stderr, "Error loading ../certs/ca-cert.pem, "
                  "please check the file.\n");
-         exit(EXIT_FAILURE);
+         return 1;
       }
 
     /* create a stream socket using tcp,internet protocal IPv4,
      * full-duplex stream */
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
     
     /* places n zero-valued bytes in the address servaddr */
-    bzero(&servaddr, sizeof(servaddr));
+    memset(&servaddr, sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(SERV_PORT);
 
     /* converts IPv4 addresses from text to binary form */
-    inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
+    ret = inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
+    if (ret != 1) {
+        return 1;
+    }
     
     /* set up pre shared keys */
     CyaSSL_CTX_set_psk_client_callback(ctx,My_Psk_Client_Cb);
 
     /* attempts to make a connection on a socket */
-    connect(sockfd, (SA *) &servaddr, sizeof(servaddr));
+    ret = connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    if (ret != 0){
+        return 1;
+    }
     
     /* creat cyassl object after each tcp connct */
     if ( (ssl = CyaSSL_new(ctx)) == NULL) {
         fprintf(stderr, "CyaSSL_new error.\n");
-        exit(EXIT_FAILURE);
+        return 1;
     }
 
     /* associate the file descriptor with the session */
@@ -225,9 +234,9 @@ int main(int argc, char **argv){
      * flags for a file. checks if it returns an error, if it does
      * stop program */
     int flags = fcntl(sockfd, F_GETFL, 0);
-    if (flags < 0){
+    if (flags < 0) {
         printf("fcntl get failed\n");
-            exit(0);
+        return 1;
     }
 
     /* invokes the fcntl callable service to set file status flags.
@@ -235,16 +244,16 @@ int main(int argc, char **argv){
      * (do not wait for terminal input. If an error occurs, 
      * stop program*/
     flags = fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
-    if (flags < 0){
+    if (flags < 0) {
         printf("fcntl set failed\n");
-        exit(0);
+        return 1;
     }
 
     /* setting up and running nonblocking socket */
     NonBlockingSSL_Connect(ssl);
 
     /* takes inputting string and outputs it to the server */
-    SendReceive(stdin, ssl);
+    SendReceive(ssl);
 
     /* cleanup */
     CyaSSL_free(ssl);
