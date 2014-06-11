@@ -146,9 +146,9 @@ int SendReceive(CYASSL* ssl)
     char recvline[MAXLINE]; /* string received from the server */
         
 	/* write string to the server */
-	if (CyaSSL_write(ssl, sendline, MAXLINE) != sizeof(sendline)) {
-		printf("Write Error to Server\n");
-		return 1;
+    if (CyaSSL_write(ssl, sendline, MAXLINE) != sizeof(sendline)) {
+	printf("Write Error to Server\n");
+	return 1;
     }
         
 	/* flags if the Server stopped before the client could end */
@@ -165,7 +165,6 @@ int SendReceive(CYASSL* ssl)
 
 int main(int argc, char **argv)
 {
-    
     int sockfd, ret;
     CYASSL_CTX* ctx;
     CYASSL* ssl;
@@ -200,7 +199,7 @@ int main(int argc, char **argv)
     ret = inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
 	
     if (ret != 1) {
-		printf("inet_pton error\n");
+	printf("inet_pton error\n");
         return 1;
     }
     
@@ -211,7 +210,7 @@ int main(int argc, char **argv)
     ret = connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
 	
     if (ret != 0) {
-		printf("Connection Error\n");
+	printf("Connection Error\n");
         return 1;
     }
     
@@ -247,7 +246,10 @@ int main(int argc, char **argv)
     }
 
     /* setting up and running nonblocking socket */
-    NonBlockingSSL_Connect(ssl);
+    ret = NonBlockingSSL_Connect(ssl);
+    if(ret != 0){
+    	return 1;
+    }
 
     /* takes inputting string and outputs it to the server */
     SendReceive(ssl);
