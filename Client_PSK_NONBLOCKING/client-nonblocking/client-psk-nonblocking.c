@@ -97,7 +97,7 @@ static int NonBlockingSSL_Connect(CYASSL* ssl)
             ret   = CyaSSL_connect(ssl);
             error = CyaSSL_get_error(ssl, 0);
         }
-        else if (select_ret == TEST_TIMEOUT && !CyaSSL_dtls(ssl)) {
+        else if (select_ret == TEST_TIMEOUT) {
             error = SSL_ERROR_WANT_READ;
         }
         else {
@@ -108,7 +108,7 @@ static int NonBlockingSSL_Connect(CYASSL* ssl)
         printf("SSL_connect failed");
         return 1;
     }
-	
+
 	return 0;
 }
 
@@ -147,8 +147,8 @@ int SendReceive(CYASSL* ssl)
         
 	/* write string to the server */
     if (CyaSSL_write(ssl, sendline, MAXLINE) != sizeof(sendline)) {
-	printf("Write Error to Server\n");
-	return 1;
+	    printf("Write Error to Server\n");
+	    return 1;
     }
         
 	/* flags if the Server stopped before the client could end */
@@ -214,7 +214,7 @@ int main(int argc, char **argv)
         return 1;
     }
     
-    /* creat cyassl object after each tcp connct */
+    /* create CyaSSL object after each tcp connect */
     if ((ssl = CyaSSL_new(ctx)) == NULL) {
         fprintf(stderr, "CyaSSL_new error.\n");
         return 1;
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
     /* associate the file descriptor with the session */
     CyaSSL_set_fd(ssl, sockfd);
 
-    /* tell cyaSSL that  nonblocking is going to be used */
+    /* tell CyaSSL that nonblocking is going to be used */
     CyaSSL_set_using_nonblock(ssl, 1);
 
     /* invokes the fcntl callable service to get the file status 
@@ -247,12 +247,15 @@ int main(int argc, char **argv)
 
     /* setting up and running nonblocking socket */
     ret = NonBlockingSSL_Connect(ssl);
-    if(ret != 0){
+    if (ret != 0) {
     	return 1;
     }
 
     /* takes inputting string and outputs it to the server */
-    SendReceive(ssl);
+    ret = SendReceive(ssl) 
+    if (ret != 0) {
+        return 1;
+    }
 
     /* cleanup */
     CyaSSL_free(ssl);
