@@ -28,7 +28,7 @@
 #include    <unistd.h>
 #include    <fcntl.h>
 #include    <sys/ioctl.h>
-#include    <cyassl/ssl.h>  /* must include this to use cyassl security */
+#include    <cyassl/ssl.h>  /* must include this to use CyaSSL security */
 
 #define     MAXLINE 256      /* max text line length */
 #define     SERV_PORT 11111  /* default port*/
@@ -158,9 +158,9 @@ int SendReceive(CYASSL* ssl)
     }
 
     /* show message from the server */
-	printf("Server Message: %s\n", recvline);
+    printf("Server Message: %s\n", recvline);
         	
-	return 0;
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
     /* attempts to make a connection on a socket */
     ret = connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
 	
-    if (ret != 0){
+    if (ret != 0) {
 		printf("Connection Error\n");
         return 1;
     }
@@ -260,6 +260,6 @@ int main(int argc, char **argv)
     CyaSSL_CTX_free(ctx);
     CyaSSL_Cleanup();
 	
-	return ret;
+    return ret;
 
 }
