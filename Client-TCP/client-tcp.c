@@ -42,8 +42,10 @@ int SendReceive(int sockfd)
     char sendline[MAXLINE]; /* string to send to the server */
     char recvline[MAXLINE]; /* string received from the server */
 
+    printf("sending String\n");
     while (fgets(sendline, MAXLINE, stdin) != NULL) {
        
+        printf("Sending String\n");
         /* write string to the server */
         write(sockfd, sendline, strlen(sendline));
        
@@ -56,6 +58,7 @@ int SendReceive(int sockfd)
         /* writes the string supplied to the indicated output stream */
         fputs(recvline, stdout);
     }
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -74,7 +77,7 @@ int main(int argc, char **argv)
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
 
     /* places n zero-valued bytes in the address servaddr */
-    memset(&servaddr, sizeof(servaddr));
+    memset(&servaddr, 0, sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_port   = htons(SERV_PORT); 
@@ -96,7 +99,10 @@ int main(int argc, char **argv)
     
     /* takes inputting string and outputs it to the server */
     ret = SendReceive(sockfd);
-
+    if (ret != 0){
+        printf("Send Recieve Error");
+        return 1;
+    }
     /* close socket and connection */
     close(sockfd);
     
