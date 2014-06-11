@@ -37,7 +37,8 @@
  */
 static inline unsigned int My_Psk_Client_Cb(CYASSL* ssl, const char* hint,
         char* identity, unsigned int id_max_len, unsigned char* key, 
-        unsigned int key_max_len){
+        unsigned int key_max_len)
+{
     (void)ssl;
     (void)hint;
     (void)key_max_len;
@@ -131,7 +132,7 @@ int main(int argc, char **argv){
         return 1;
     }
     
-    /* creat cyassl object after each tcp connct */
+    /* creat CyaSSL object after each tcp connct */
     if ( (ssl = CyaSSL_new(ctx)) == NULL) {
         fprintf(stderr, "CyaSSL_new error.\n");
         return 1;
@@ -147,7 +148,7 @@ int main(int argc, char **argv){
     session   = CyaSSL_get_session(ssl);
     sslResume = CyaSSL_new(ctx);
 
-    /* shut down Cyassl SSL */
+    /* shut down CyaSSL */
     CyaSSL_shutdown(ssl);
 
     /* close connection */
@@ -191,7 +192,7 @@ int main(int argc, char **argv){
     else
         printf("didn't reuse session id!!!\n");
 
-    /* shut down cyassl ssl */
+    /* shut down CyaSSL */
     CyaSSL_shutdown(sslResume);
 
     /* shut down socket */
