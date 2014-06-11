@@ -108,6 +108,7 @@ static int NonBlockingSSL_Connect(CYASSL* ssl)
         printf("SSL_connect failed");
         return 1;
     }
+	
 	return 0;
 }
 
@@ -258,5 +259,7 @@ int main(int argc, char **argv)
      * cyassl_ctx object */
     CyaSSL_CTX_free(ctx);
     CyaSSL_Cleanup();
+	
+	return ret;
 
 }
