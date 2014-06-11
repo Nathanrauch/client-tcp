@@ -114,7 +114,7 @@ int main(int argc, char **argv){
     memset(&servaddr, 0, sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(SERV_PORT);
+    servaddr.sin_port   = htons(SERV_PORT);
 
     /* converts IPv4 addresses from text to binary form */
     ret = inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
@@ -132,7 +132,7 @@ int main(int argc, char **argv){
         return 1;
     }
     
-    /* creat CyaSSL object after each tcp connct */
+    /* create CyaSSL object after each tcp connect */
     if ( (ssl = CyaSSL_new(ctx)) == NULL) {
         fprintf(stderr, "CyaSSL_new error.\n");
         return 1;
@@ -184,7 +184,10 @@ int main(int argc, char **argv){
     }
 
     /* takes inputting string and outputs it to the server */
-    SendReceive(sslResume);
+    ret = SendReceive(sslResume);
+    if (ret != 0) {
+        return 1;
+    }
 
     /* check to see if the session id is being reused */
     if (CyaSSL_session_reused(sslResume))
