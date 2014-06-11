@@ -39,25 +39,23 @@
  */ 
 int SendReceive(int sockfd)
 {
-    char sendline[MAXLINE]; /* string to send to the server */
+    char sendline[MAXLINE]="Hello Server"; /* string to send to the server */
     char recvline[MAXLINE]; /* string received from the server */
 
-    printf("sending String\n");
-    while (fgets(sendline, MAXLINE, stdin) != NULL) {
-       
-        printf("Sending String\n");
-        /* write string to the server */
-        write(sockfd, sendline, strlen(sendline));
-       
-        /* flags if the server stopped before the client could end */     
-        if (read(sockfd, recvline, MAXLINE) == 0) {
-            printf("Client: Server Terminated Prematurely!\n");
-            return 1;
-        }
-
-        /* writes the string supplied to the indicated output stream */
-        fputs(recvline, stdout);
+    /* write string to the server */
+    if (write(sockfd, sendline, strlen(sendline) != sizeof(sendline)) {
+        printf("Write Error to Server\n");
+        return 1;
     }
+       
+    /* flags if the server stopped before the client could end */     
+    if (read(sockfd, recvline, MAXLINE) == 0) {
+        printf("Client: Server Terminated Prematurely!\n");
+        return 1;
+    }
+
+    printf("Server Message: %s\n", recvline);
+    
     return 0;
 }
 

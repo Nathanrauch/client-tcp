@@ -118,7 +118,8 @@ int main(int argc, char **argv)
     ret = inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
 
     if (ret != 1) {
-		 return 1;
+        printf("inet_pton error\n");    
+		return 1;
     }
     
     /* set up pre shared keys */

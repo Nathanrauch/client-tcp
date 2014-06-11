@@ -27,7 +27,7 @@
 #include    <arpa/inet.h>
 #include    <signal.h>
 #include    <unistd.h>
-#include    <cyassl/ssl.h>  /* must include this to use cyassl security */
+#include    <cyassl/ssl.h>  /* must include this to use CyaSSL security */
 
 #define     MAXLINE 256      /* max text line length */
 #define     SERV_PORT 11111  /* default port*/
@@ -56,14 +56,30 @@ static inline unsigned int My_Psk_Client_Cb(CYASSL* ssl, const char* hint,
 }
 
 /*
- * this function will send the inputted string to the server
+ * this function will send the inputted string to the server and then 
+ * recieve the string from the server outputing it to the termial
  */ 
-void SendReceive(CYASSL* ssl){
-    char sendline[MAXLINE]; /* string to send to the server */
-    
-        fgets(sendline, MAXLINE, stdin);
-        /* write string to the server */
-        CyaSSL_write(ssl, sendline, strlen(sendline));
+int SendReceive(CYASSL* ssl)
+{
+    char sendline[MAXLINE]="Hello Server"; /* string to send to the server */
+    char recvline[MAXLINE]; /* string received from the server */
+        
+	/* write string to the server */
+	if (CyaSSL_write(ssl, sendline, MAXLINE) != sizeof(sendline)) {
+		printf("Write Error to Server\n");
+		return 1;
+    }
+        
+	/* flags if the Server stopped before the client could end */
+    if (CyaSSL_read(ssl, recvline, MAXLINE) < 0 ) {
+    	printf("Client: Server Terminated Prematurely!\n");
+        return 1;
+    }
+
+    /* show message from the server */
+	printf("Server Message: %s\n", recvline);
+        	
+	return 0;
 }
 
 int main(int argc, char **argv){
@@ -85,25 +101,16 @@ int main(int argc, char **argv){
     
     /* create and initialize CYASSL_CTX structure */
     if ((ctx = CyaSSL_CTX_new(CyaTLSv1_2_client_method())) == NULL) {
-        fprintf(stderr, "SSL_CTX_new error.\n");
-       return 1;
+    	fprintf(stderr, "SSL_CTX_new error.\n");
+    	return 1;
     }
                 
-     /* load ca certificates into CYASSL_CTX.
-      * these will be used to verify the server we connect to */
-    if (CyaSSL_CTX_load_verify_locations(ctx,"../certs/ca-cert.pem",0) != 
-            SSL_SUCCESS) {
-         fprintf(stderr, "Error loading ../certs/ca-cert.pem, "
-                 "please check the file.\n");
-         return 1;
-     }
-
     /* create a stream socket using tcp,internet protocal IPv4,
      * full-duplex stream */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     
     /* places n zero-valued bytes in the address servaddr */
-    memset(&servaddr, sizeof(servaddr));
+    memset(&servaddr, 0, sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(SERV_PORT);
@@ -116,7 +123,7 @@ int main(int argc, char **argv){
     }
     
     /* set up pre shared keys */
-    CyaSSL_CTX_set_psk_client_callback(ctx,My_Psk_Client_Cb);
+    CyaSSL_CTX_set_psk_client_callback(ctx, My_Psk_Client_Cb);
 
     /* attempts to make a connection on a socket */
     ret = connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
@@ -159,7 +166,7 @@ int main(int argc, char **argv){
     sock = socket(AF_INET, SOCK_STREAM, 0);
     
     /* connect to the socket */
-    ret =connect(sock, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    ret = connect(sock, (struct sockaddr *) &servaddr, sizeof(servaddr));
     
     if (ret != 0){
         return 1;
